@@ -28,11 +28,22 @@ class buiProducts {
       $category = new stdClass();
       $category->id = $group->getAttribute('Идентификатор');
       $category->title = $group->getAttribute('Наименование');
+      $category->parent_id = $group->getAttribute('Родитель');
 
       $this->categories[] = $category;
 
     }
 
+    foreach($this->categories as &$category){
+      if(!empty($category->parent_id) ) $category->parent =& $this->_findCategory($category->parent_id);
+    }
+
+  }
+
+  private function &_findCategory($category_id){
+    foreach($this->categories as &$category){
+      if($category->id == $category_id) return $category;
+    }
   }
 
   public function findProducts(){
@@ -44,8 +55,16 @@ class buiProducts {
 
     $this->products = array();
 
+    $i = 0;
+
     foreach($items as $item){
-      
+
+      $i++;
+
+      if($i < 100) continue;
+
+      if($i == 150) break;
+
       $product = new stdClass();
 
       $product->id = $item->getAttribute('Идентификатор');
@@ -58,9 +77,36 @@ class buiProducts {
       if(empty($product->image) ){
         $product->image = $this->_getProductOption($item, 'Картинка1');
       }
-      
+
+      $product->images = $this->_getProductOptions($item, "^Картинка");
+
       $this->products[] = $product;
 
+    }
+
+  }
+
+  private function _getProductOptions($context_node, $pid_pattern){
+
+    $node_list = $context_node->getElementsByTagName('ЗначениеСвойства');
+
+    $values = array();
+
+    foreach($node_list as $node){
+      $pid = $node->getAttribute('ИдентификаторСвойства');
+      if(mb_ereg_match($pid_pattern, $pid) ) $values[] = $node->getAttribute('Значение');
+    }
+
+    return $values;
+
+  }
+
+  public function setProductCategories(){
+
+    foreach($this->products as &$product){
+      foreach($this->categories as &$category){
+        if($category->id == $product->category_id) $product->category = $category;
+      }
     }
 
   }
@@ -96,7 +142,7 @@ class buiProducts {
     $this->offers = array();
 
     foreach($items as $item){
-      
+
       $offer = new stdClass();
 
       $offer->product_id = $item->getAttribute('ИдентификаторТовара');
@@ -108,27 +154,8 @@ class buiProducts {
 
   }
 
-  public function setProductCategories(){
-
-    foreach($this->products as &$product){
-
-      $product->category_title = null;
-
-      foreach($this->categories as $category){
-
-        if($product->category_id == $category->id){
-          $product->category_title = $category->title;
-          break;
-        }
-
-      }
-
-    }
-
-  }
-
   public function setProductPrices(){
-    
+
     foreach($this->products as &$product){
 
       $product->price = 0;
