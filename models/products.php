@@ -55,15 +55,7 @@ class buiProducts {
 
     $this->products = array();
 
-    $i = 0;
-
     foreach($items as $item){
-
-      $i++;
-
-      if($i < 100) continue;
-
-      if($i == 150) break;
 
       $product = new stdClass();
 
